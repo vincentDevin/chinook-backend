@@ -4,10 +4,25 @@ import pool from '../utils/db';
 import { Employee } from '../models/employee';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-// Get all employees
-export const getAllEmployees = async (): Promise<Employee[]> => {
-  const [rows] = await pool.query<Employee[] & RowDataPacket[]>('SELECT * FROM Employee');
-  return rows;
+// Get all employees with pagination
+export const getAllEmployees = async (limit: number, offset: number): Promise<{ employees: Employee[]; totalCount: number }> => {
+  const [rows] = await pool.query<Employee[] & RowDataPacket[]>(
+    `SELECT SQL_CALC_FOUND_ROWS * 
+     FROM Employee
+     LIMIT ?
+     OFFSET ?`,
+    [limit, offset]
+  );
+
+  // Retrieve the total count of employees
+  const [totalRows] = await pool.query<RowDataPacket[]>(
+    'SELECT FOUND_ROWS() AS totalCount'
+  );
+
+  return {
+    employees: rows,
+    totalCount: totalRows[0].totalCount,
+  };
 };
 
 // Get employee by ID

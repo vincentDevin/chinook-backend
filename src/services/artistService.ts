@@ -2,6 +2,14 @@ import pool from '../utils/db';
 import { Artist } from '../models/artist';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
+// Define the ArtistWithDetails type
+export type ArtistWithDetails = {
+  ArtistId: number;
+  Name: string;
+  // You can add more fields if needed, depending on your schema
+};
+
+
 // Get all artists with pagination
 export const getAllArtists = async (limit: number, offset: number): Promise<{ artists: Artist[], totalCount: number }> => {
   // Get paginated artists
@@ -50,16 +58,35 @@ export const createArtist = async (newArtist: Omit<Artist, 'ArtistId'>): Promise
 };
 
 // Update an existing artist
-export const updateArtist = async (id: number, updatedArtist: Partial<Artist>): Promise<Artist | null> => {
-  const [result] = await pool.query<ResultSetHeader>(
-    'UPDATE Artist SET ? WHERE ArtistId = ?',
-    [updatedArtist, id]
-  );
-  if (result.affectedRows > 0) {
-    return await getArtistById(id);
+export const updateArtist = async (id: number, updatedArtist: Partial<ArtistWithDetails>): Promise<ArtistWithDetails | null> => {
+  // Fetch the current artist details to get the existing values
+  const currentArtist = await getArtistById(id);
+  
+  if (!currentArtist) {
+    throw new Error('Artist not found');
   }
+
+  // Merge the updated fields with the current values (preserve the current values if not provided)
+  const mergedArtist = {
+    Name: updatedArtist.Name ?? currentArtist.Name,
+  };
+
+  // Perform the update with the merged values
+  const [result] = await pool.query<ResultSetHeader>(
+    `UPDATE Artist SET Name = ? WHERE ArtistId = ?`,
+    [mergedArtist.Name, id]
+  );
+
+  if (result.affectedRows > 0) {
+    // Fetch the updated artist details
+    const updated = await getArtistById(id);
+    return updated;
+  }
+
   return null;
 };
+
+
 
 // Delete an artist
 export const deleteArtist = async (id: number): Promise<boolean> => {

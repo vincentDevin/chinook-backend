@@ -1,15 +1,17 @@
-// src/controllers/employeeController.ts
-
 import { Request, Response } from 'express';
 import * as employeeService from '../services/employeeService';
 import { Employee } from '../models/employee';
 
-// Get all employees
+// Get all employees with pagination
 export const getAllEmployees = async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string, 10) || 10; // Default limit to 10
+  const offset = parseInt(req.query.offset as string, 10) || 0; // Default offset to 0
+
   try {
-    const employees: Employee[] = await employeeService.getAllEmployees();
-    res.status(200).json(employees);
+    const { employees, totalCount } = await employeeService.getAllEmployees(limit, offset);
+    res.status(200).json({ employees, totalPages: Math.ceil(totalCount / limit) });
   } catch (error) {
+    console.error('Error fetching employees:', error);
     res.status(500).json({ message: 'Error fetching employees', error });
   }
 };
@@ -25,6 +27,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Employee not found' });
     }
   } catch (error) {
+    console.error('Error fetching employee:', error);
     res.status(500).json({ message: 'Error fetching employee', error });
   }
 };
@@ -36,6 +39,7 @@ export const createEmployee = async (req: Request, res: Response) => {
     const createdEmployee = await employeeService.createEmployee(newEmployee);
     res.status(201).json(createdEmployee);
   } catch (error) {
+    console.error('Error creating employee:', error);
     res.status(500).json({ message: 'Error creating employee', error });
   }
 };
@@ -52,6 +56,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Employee not found' });
     }
   } catch (error) {
+    console.error('Error updating employee:', error);
     res.status(500).json({ message: 'Error updating employee', error });
   }
 };
@@ -67,6 +72,7 @@ export const deleteEmployee = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Employee not found' });
     }
   } catch (error) {
+    console.error('Error deleting employee:', error);
     res.status(500).json({ message: 'Error deleting employee', error });
   }
 };

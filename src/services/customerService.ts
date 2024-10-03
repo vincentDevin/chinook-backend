@@ -4,10 +4,25 @@ import pool from '../utils/db';
 import { Customer } from '../models/customer';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-// Get all customers
-export const getAllCustomers = async (): Promise<Customer[]> => {
-  const [rows] = await pool.query<Customer[] & RowDataPacket[]>('SELECT * FROM Customer');
-  return rows;
+// Get all customers with pagination
+export const getAllCustomers = async (limit: number, offset: number): Promise<{ customers: Customer[]; totalCount: number }> => {
+  const [rows] = await pool.query<Customer[] & RowDataPacket[]>(
+    `SELECT SQL_CALC_FOUND_ROWS * 
+     FROM Customer
+     LIMIT ?
+     OFFSET ?`,
+    [limit, offset]
+  );
+
+  // Retrieve the total count of customers
+  const [totalRows] = await pool.query<RowDataPacket[]>(
+    'SELECT FOUND_ROWS() AS totalCount'
+  );
+
+  return {
+    customers: rows,
+    totalCount: totalRows[0].totalCount,
+  };
 };
 
 // Get customer by ID

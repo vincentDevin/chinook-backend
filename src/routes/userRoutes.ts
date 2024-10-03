@@ -1,14 +1,14 @@
-// src/routes/userRoutes.ts
-
 import { Router } from 'express';
 import * as userController from '../controllers/userController';
+import { authenticateToken, authorizeRole } from '../middlewares/authMiddleware'; // Import the middleware
 
 const router = Router();
 
-router.get('/', userController.getAllUsers);
-router.get('/:id', userController.getUserById);
-router.post('/', userController.createUser);
-router.put('/:id', userController.updateUser);
-router.delete('/:id', userController.deleteUser);
+// Only allow authenticated users with UserRoleId >= 2 to access these routes (assuming roleId 2 is for admins)
+router.get('/', authenticateToken, authorizeRole(2), userController.getAllUsers);
+router.get('/:id', authenticateToken, authorizeRole(2), userController.getUserById);
+router.post('/', authenticateToken, authorizeRole(2), userController.createUser);
+router.put('/:id', authenticateToken, authorizeRole(2), userController.updateUser);
+router.delete('/:id', authenticateToken, authorizeRole(2), userController.deleteUser);
 
 export default router;

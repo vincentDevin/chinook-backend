@@ -1,15 +1,17 @@
-// src/controllers/customerController.ts
-
 import { Request, Response } from 'express';
 import * as customerService from '../services/customerService';
 import { Customer } from '../models/customer';
 
-// Get all customers
+// Get all customers with pagination
 export const getAllCustomers = async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string, 10) || 10; // Default limit to 10
+  const offset = parseInt(req.query.offset as string, 10) || 0; // Default offset to 0
+
   try {
-    const customers: Customer[] = await customerService.getAllCustomers();
-    res.status(200).json(customers);
+    const { customers, totalCount } = await customerService.getAllCustomers(limit, offset);
+    res.status(200).json({ customers, totalPages: Math.ceil(totalCount / limit) });
   } catch (error) {
+    console.error('Error fetching customers:', error);
     res.status(500).json({ message: 'Error fetching customers', error });
   }
 };
@@ -25,6 +27,7 @@ export const getCustomerById = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Customer not found' });
     }
   } catch (error) {
+    console.error('Error fetching customer:', error);
     res.status(500).json({ message: 'Error fetching customer', error });
   }
 };
@@ -36,6 +39,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const createdCustomer = await customerService.createCustomer(newCustomer);
     res.status(201).json(createdCustomer);
   } catch (error) {
+    console.error('Error creating customer:', error);
     res.status(500).json({ message: 'Error creating customer', error });
   }
 };
@@ -52,6 +56,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Customer not found' });
     }
   } catch (error) {
+    console.error('Error updating customer:', error);
     res.status(500).json({ message: 'Error updating customer', error });
   }
 };
@@ -67,6 +72,7 @@ export const deleteCustomer = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Customer not found' });
     }
   } catch (error) {
+    console.error('Error deleting customer:', error);
     res.status(500).json({ message: 'Error deleting customer', error });
   }
 };

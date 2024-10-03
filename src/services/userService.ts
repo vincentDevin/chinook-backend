@@ -1,23 +1,29 @@
-// src/services/userService.ts
-
 import pool from '../utils/db';
 import { User } from '../models/user';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { hashPassword, validatePassword } from '../utils/hashUtils';
 
-// Get all users
-export const getAllUsers = async (): Promise<User[]> => {
-  const [rows] = await pool.query<User[] & RowDataPacket[]>('SELECT * FROM user');
-  return rows;
+// Define a type that omits sensitive information
+export type SafeUser = Omit<User, 'UserPassword' | 'UserSalt'>;
+
+// Get all users excluding sensitive fields
+export const getAllUsers = async (): Promise<SafeUser[]> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT UserId, UserEmail, UserRoleId, UserActive FROM user'  // Exclude password and salt
+  );
+  return rows as SafeUser[];
 };
 
-// Get user by ID
-export const getUserById = async (id: number): Promise<User | null> => {
-  const [rows] = await pool.query<User[] & RowDataPacket[]>('SELECT * FROM user WHERE UserId = ?', [id]);
-  return rows.length > 0 ? rows[0] : null;
+// Get user by ID excluding sensitive fields
+export const getUserById = async (id: number): Promise<SafeUser | null> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT UserId, UserEmail, UserRoleId, UserActive FROM user WHERE UserId = ?',
+    [id]
+  );
+  return rows.length > 0 ? (rows[0] as SafeUser) : null;
 };
 
-// Get user by email (for authentication)
+// Get user by email (for authentication purposes, includes password and salt)
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   const [rows] = await pool.query<User[] & RowDataPacket[]>('SELECT * FROM user WHERE UserEmail = ?', [email]);
   return rows.length > 0 ? rows[0] : null;
@@ -40,7 +46,7 @@ export const createUser = async (user: Omit<User, 'UserId'>): Promise<User> => {
 };
 
 // Update an existing user
-export const updateUser = async (id: number, updatedUser: Partial<User>): Promise<User | null> => {
+export const updateUser = async (id: number, updatedUser: Partial<User>): Promise<SafeUser | null> => {
   const [result] = await pool.query<ResultSetHeader>(
     'UPDATE user SET ? WHERE UserId = ?',
     [updatedUser, id]

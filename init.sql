@@ -144,13 +144,13 @@ CREATE TABLE userrole (
   UserRoleDescription varchar(200) NOT NULL
 );
 
-CREATE TABLE user (
-  UserId int(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  UserPassword char(255) NOT NULL,
-  UserEmail char(255) NOT NULL,
-  UserSalt char(32) NOT NULL,
+CREATE TABLE users (
+  UserId INT(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  UserPassword CHAR(255) NOT NULL,
+  UserEmail CHAR(255) NOT NULL UNIQUE,
+  UserSalt CHAR(32) NOT NULL,
   UserRoleId INT NOT NULL DEFAULT '3',
-  UserActive boolean NOT NULL DEFAULT true,
+  UserActive BOOLEAN NOT NULL DEFAULT TRUE,
   FOREIGN KEY (UserRoleId) REFERENCES userrole(UserRoleId)
 );
 
