@@ -11,6 +11,78 @@ export interface TrackWithDetails extends Track {
   MediaTypeName?: string;
 }
 
+// Get all tracks by GenreId
+export const getTracksByGenreId = async (genreId: number): Promise<TrackWithDetails[]> => {
+  try {
+    // Get tracks where the GenreId matches
+    const [tracks] = await pool.query<TrackWithDetails[] & RowDataPacket[]>(
+      `SELECT 
+        t.TrackId, 
+        t.Name, 
+        t.Composer, 
+        t.Milliseconds, 
+        t.Bytes, 
+        t.UnitPrice,
+        a.Title AS AlbumTitle,           -- Include related Album title
+        g.Name AS GenreName,             -- Include related Genre name
+        m.Name AS MediaTypeName,         -- Include related MediaType name
+        ar.Name AS ArtistName            -- Include related Artist name
+      FROM 
+        Track t
+      LEFT JOIN 
+        Album a ON t.AlbumId = a.AlbumId
+      LEFT JOIN 
+        Genre g ON t.GenreId = g.GenreId
+      LEFT JOIN 
+        MediaType m ON t.MediaTypeId = m.MediaTypeId
+      LEFT JOIN 
+        Artist ar ON a.ArtistId = ar.ArtistId -- Join artist table through album
+      WHERE 
+        t.GenreId = ?`, // Filter by GenreId
+      [genreId]
+    );
+
+    return tracks;
+  } catch (error) {
+    console.error(`Error fetching tracks for genre ID ${genreId}:`, error);
+    throw new Error('Database query error');
+  }
+};
+
+// Get all tracks by AlbumId
+export const getTracksByAlbumId = async (albumId: number): Promise<TrackWithDetails[]> => {
+  try {
+    const [tracks] = await pool.query<TrackWithDetails[] & RowDataPacket[]>(
+      `SELECT 
+        t.TrackId, 
+        t.Name, 
+        t.Composer, 
+        t.Milliseconds, 
+        t.Bytes, 
+        t.UnitPrice,
+        a.Title AS AlbumTitle,           -- Include related Album title
+        g.Name AS GenreName,             -- Include related Genre name
+        m.Name AS MediaTypeName          -- Include related MediaType name
+      FROM 
+        Track t
+      LEFT JOIN 
+        Album a ON t.AlbumId = a.AlbumId
+      LEFT JOIN 
+        Genre g ON t.GenreId = g.GenreId
+      LEFT JOIN 
+        MediaType m ON t.MediaTypeId = m.MediaTypeId
+      WHERE 
+        t.AlbumId = ?`,
+      [albumId]
+    );
+
+    return tracks;
+  } catch (error) {
+    console.error(`Error fetching tracks for album ID ${albumId}:`, error);
+    throw new Error('Database query error');
+  }
+};
+
 // Get all tracks with pagination and related data, excluding IDs
 export const getAllTracks = async (
   limit: number,
@@ -58,7 +130,7 @@ export const getAllTracks = async (
   }
 };
 
-// Get track by ID with related data, excluding IDs from the result
+// Get track by ID with related data, including artist name
 export const getTrackById = async (id: number): Promise<TrackWithDetails | null> => {
   // Validate that the ID is a positive number
   if (isNaN(id) || id <= 0) {
@@ -69,21 +141,26 @@ export const getTrackById = async (id: number): Promise<TrackWithDetails | null>
   try {
     const [rows] = await pool.query<TrackWithDetails[] & RowDataPacket[]>(
       `SELECT 
-        t.Name,
         t.TrackId,                      -- Keep the TrackId to identify the track
-        t.Composer, t.Milliseconds, 
-        t.Bytes, t.UnitPrice, 
+        t.Name, 
+        t.Composer, 
+        t.Milliseconds, 
+        t.Bytes, 
+        t.UnitPrice, 
         a.Title AS AlbumTitle,           -- Include related Album title
         g.Name AS GenreName,             -- Include related Genre name
-        m.Name AS MediaTypeName          -- Include related Media type name
+        m.Name AS MediaTypeName,         -- Include related Media type name
+        ar.Name AS ArtistName            -- Fetch ArtistName from the Artist table
       FROM 
         Track t
       LEFT JOIN 
-        Album a ON t.AlbumId = a.AlbumId -- Exclude AlbumId from the result
+        Album a ON t.AlbumId = a.AlbumId -- Join Album to get Album title and ArtistId
       LEFT JOIN 
-        Genre g ON t.GenreId = g.GenreId -- Exclude GenreId from the result
+        Artist ar ON a.ArtistId = ar.ArtistId -- Join Artist through Album to get Artist name
       LEFT JOIN 
-        MediaType m ON t.MediaTypeId = m.MediaTypeId -- Exclude MediaTypeId from the result
+        Genre g ON t.GenreId = g.GenreId -- Join Genre to get Genre name
+      LEFT JOIN 
+        MediaType m ON t.MediaTypeId = m.MediaTypeId -- Join MediaType to get MediaType name
       WHERE 
         t.TrackId = ?
       LIMIT 1`, // Fetching only a single track

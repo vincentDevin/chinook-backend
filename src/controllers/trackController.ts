@@ -1,8 +1,52 @@
-// src/controllers/trackController.ts
-
 import { Request, Response } from 'express';
 import * as trackService from '../services/trackService';
 import { Track } from '../models/track';
+
+// Get all tracks for a specific album by AlbumId
+export const getTracksByAlbumId = async (req: Request, res: Response) => {
+  const albumId = parseInt(req.params.albumId, 10);
+
+  // Validate that the album ID is a positive number
+  if (isNaN(albumId) || albumId <= 0) {
+    return res.status(400).json({ message: 'Invalid AlbumId. It must be a positive number.' });
+  }
+
+  try {
+    const tracks = await trackService.getTracksByAlbumId(albumId);
+    
+    if (tracks.length > 0) {
+      res.status(200).json(tracks);
+    } else {
+      res.status(404).json({ message: 'No tracks found for this album' });
+    }
+  } catch (error) {
+    console.error(`Error fetching tracks for album ID ${albumId}:`, error);
+    res.status(500).json({ message: 'Error fetching tracks', error });
+  }
+};
+
+// Get all tracks by GenreId
+export const getTracksByGenreId = async (req: Request, res: Response) => {
+  const genreId = parseInt(req.params.genreId, 10);
+
+  // Validate that the genre ID is a positive number
+  if (isNaN(genreId) || genreId <= 0) {
+    return res.status(400).json({ message: 'Invalid GenreId. It must be a positive number.' });
+  }
+
+  try {
+    const tracks = await trackService.getTracksByGenreId(genreId);
+    
+    if (tracks.length > 0) {
+      res.status(200).json(tracks);
+    } else {
+      res.status(404).json({ message: 'No tracks found for this genre' });
+    }
+  } catch (error) {
+    console.error(`Error fetching tracks for genre ID ${genreId}:`, error);
+    res.status(500).json({ message: 'Error fetching tracks', error });
+  }
+};
 
 // Get all tracks with pagination
 export const getAllTracks = async (req: Request, res: Response) => {

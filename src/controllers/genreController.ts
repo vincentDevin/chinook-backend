@@ -1,7 +1,6 @@
-// src/controllers/genreController.ts
-
 import { Request, Response } from 'express';
 import * as genreService from '../services/genreService';
+import * as trackService from '../services/trackService'; // Import track service to fetch tracks
 import { Genre } from '../models/genre';
 
 // Get all genres
@@ -28,6 +27,27 @@ export const getGenreById = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error fetching genre', error });
   }
 };
+
+// Get tracks by GenreId with pagination
+export const getTracksByGenreId = async (req: Request, res: Response) => {
+  const genreId = parseInt(req.params.id, 10);
+  const limit = parseInt(req.query.limit as string) || 10; // Default to 10 if not provided
+  const offset = parseInt(req.query.offset as string) || 0; // Default to 0 if not provided
+
+  try {
+    const { tracks, totalCount } = await genreService.getTracksByGenreId(genreId, limit, offset);
+    res.status(200).json({
+      tracks,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: Math.floor(offset / limit) + 1,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching tracks for genre', error });
+  }
+};
+
+
 
 // Create a new genre
 export const createGenre = async (req: Request, res: Response) => {

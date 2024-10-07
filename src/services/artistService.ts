@@ -1,6 +1,13 @@
 import pool from '../utils/db';
 import { Artist } from '../models/artist';
+import { Album } from '../models/album';
+import { Genre } from '../models/genre';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
+
+// Define a new type that includes an artist and their related albums
+export type ArtistWithAlbums = Artist & {
+  albums: Album[];
+};
 
 // Define the ArtistWithDetails type
 export type ArtistWithDetails = {
@@ -10,38 +17,86 @@ export type ArtistWithDetails = {
 };
 
 
-// Get all artists with pagination
-export const getAllArtists = async (limit: number, offset: number): Promise<{ artists: Artist[], totalCount: number }> => {
-  // Get paginated artists
-  const [artists] = await pool.query<Artist[] & RowDataPacket[]>(
-    'SELECT * FROM Artist LIMIT ? OFFSET ?',
-    [limit, offset]
-  );
-
-  // Get the total count of artists
-  const [totalCountResult] = await pool.query<RowDataPacket[]>(
-    'SELECT COUNT(*) as totalCount FROM Artist'
-  );
-  const totalCount = totalCountResult[0].totalCount;
-
-  return { artists, totalCount };
-};
-
-// Get artist by ID
-export const getArtistById = async (id: number): Promise<Artist | null> => {
+// Fetch artist by ID, including albums
+export const getArtistByIdWithAlbums = async (id: number): Promise<ArtistWithAlbums | null> => {
   try {
-    const [rows] = await pool.query<Artist[] & RowDataPacket[]>(
+    // Fetch the artist by ID
+    const [artistRows] = await pool.query<Artist[] & RowDataPacket[]>(
       'SELECT * FROM Artist WHERE ArtistId = ?',
       [id]
     );
 
+    if (artistRows.length === 0) {
+      return null; // Artist not found
+    }
+
+    const artist = artistRows[0];
+
+    // Fetch the albums related to the artist
+    const [albumRows] = await pool.query<Album[] & RowDataPacket[]>(
+      'SELECT * FROM Album WHERE ArtistId = ?',
+      [id]
+    );
+
+    // Return the artist with their albums
+    return {
+      ...artist,
+      albums: albumRows,
+    };
+  } catch (error) {
+    console.error('Error fetching artist with albums:', error);
+    throw new Error('Database query failed');
+  }
+};
+
+export const getAllArtists = async (limit: number, offset: number): Promise<{ artists: Artist[], totalCount: number }> => {
+  try {
+    const [artists] = await pool.query<Artist[] & RowDataPacket[]>(
+      'SELECT * FROM Artist LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+
+    const [totalCountResult] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as totalCount FROM Artist'
+    );
+
+    const totalCount = totalCountResult[0].totalCount;
+    return { artists, totalCount };
+  } catch (error) {
+    console.error('Error fetching all artists:', error);
+    throw new Error('Failed to fetch artists');
+  }
+};
+
+// Get artist by ID, including all distinct genres from their albums
+export const getArtistById = async (id: number): Promise<Artist | null> => {
+  try {
+    // Modify the query to join Genre through the Track table
+    const [rows] = await pool.query<Artist[] & RowDataPacket[]>(
+      `SELECT 
+        ar.ArtistId,
+        ar.Name,
+        GROUP_CONCAT(DISTINCT g.Name) AS Genres -- Concatenate distinct genre names
+      FROM Artist ar
+      LEFT JOIN Album a ON ar.ArtistId = a.ArtistId
+      LEFT JOIN Track t ON a.AlbumId = t.AlbumId -- Join Track through Album
+      LEFT JOIN Genre g ON t.GenreId = g.GenreId -- Join Genre through Track
+      WHERE ar.ArtistId = ?
+      GROUP BY ar.ArtistId, ar.Name`, // Group by Artist to get unique genres
+      [id]
+    );
+
     if (rows.length > 0) {
-      return rows[0];
+      return {
+        ArtistId: rows[0].ArtistId,
+        Name: rows[0].Name,
+        Genres: rows[0].Genres ? (rows[0].Genres as unknown as string).split(',') : [] // Convert Genres to string first
+      };
     } else {
       return null; // No artist found with the provided ID
     }
   } catch (error) {
-    console.error('Error fetching artist:', error); // Log the error for debugging purposes
+    console.error('Error fetching artist with genres:', error); // Log the error for debugging purposes
     throw new Error('Database query failed'); // Throw a generic error message
   }
 };
@@ -57,35 +112,32 @@ export const createArtist = async (newArtist: Omit<Artist, 'ArtistId'>): Promise
   return { ArtistId: insertedId, Name };
 };
 
-// Update an existing artist
 export const updateArtist = async (id: number, updatedArtist: Partial<ArtistWithDetails>): Promise<ArtistWithDetails | null> => {
-  // Fetch the current artist details to get the existing values
   const currentArtist = await getArtistById(id);
-  
+
   if (!currentArtist) {
     throw new Error('Artist not found');
   }
 
-  // Merge the updated fields with the current values (preserve the current values if not provided)
   const mergedArtist = {
     Name: updatedArtist.Name ?? currentArtist.Name,
   };
 
-  // Perform the update with the merged values
   const [result] = await pool.query<ResultSetHeader>(
     `UPDATE Artist SET Name = ? WHERE ArtistId = ?`,
     [mergedArtist.Name, id]
   );
 
   if (result.affectedRows > 0) {
-    // Fetch the updated artist details
-    const updated = await getArtistById(id);
-    return updated;
+    // Instead of fetching again, return the merged data
+    return {
+      ArtistId: id,
+      Name: mergedArtist.Name,
+    };
   }
 
   return null;
 };
-
 
 
 // Delete an artist

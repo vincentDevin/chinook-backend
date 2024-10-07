@@ -2,7 +2,7 @@
 
 import { Request, Response } from 'express';
 import * as albumService from '../services/albumService';
-import { Album } from '../models/album';
+import { Album, NewAlbum } from '../models/album';
 
 // Get all albums with pagination and artist data
 export const getAllAlbums = async (req: Request, res: Response) => {
@@ -32,9 +32,9 @@ export const getAlbumById = async (req: Request, res: Response) => {
   }
 };
 
-// Create a new album
+// Create a new album (NewAlbum type doesn't require AlbumId)
 export const createAlbum = async (req: Request, res: Response) => {
-  const newAlbum: Album = req.body;
+  const newAlbum: NewAlbum = req.body;  // Use NewAlbum here
   try {
     const createdAlbum = await albumService.createAlbum(newAlbum);
     res.status(201).json(createdAlbum);
@@ -43,7 +43,7 @@ export const createAlbum = async (req: Request, res: Response) => {
   }
 };
 
-// Update an existing album
+// Update an existing album (Album type includes AlbumId)
 export const updateAlbum = async (req: Request, res: Response) => {
   const id = parseInt(req.params.id, 10);
   const updatedAlbum: Partial<Album> = req.body;
@@ -58,6 +58,7 @@ export const updateAlbum = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error updating album', error });
   }
 };
+
 
 // Delete an album
 export const deleteAlbum = async (req: Request, res: Response) => {

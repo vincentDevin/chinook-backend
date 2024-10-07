@@ -61,20 +61,26 @@ export const createMediaType = async (newMediaType: Omit<MediaType, 'MediaTypeId
 // Update an existing media type
 export const updateMediaType = async (id: number, updatedMediaType: Partial<MediaType>): Promise<MediaType | null> => {
   try {
+    console.log(`Updating media type with id: ${id}, new data:`, updatedMediaType);
+    
     const [result] = await pool.query<ResultSetHeader>(
       'UPDATE MediaType SET Name = ? WHERE MediaTypeId = ?',
       [updatedMediaType.Name, id]
     );
 
     if (result.affectedRows > 0) {
+      console.log(`Media type with id: ${id} updated successfully.`);
       return getMediaTypeById(id);
     }
+    
+    console.log(`Media type with id: ${id} not found for update.`);
     return null;
   } catch (error) {
     console.error('Error updating media type:', error);
     throw error;
   }
 };
+
 
 // Delete a media type
 export const deleteMediaType = async (id: number): Promise<boolean> => {
