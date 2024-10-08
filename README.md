@@ -16,14 +16,14 @@ Before setting up the project, make sure you have the following installed:
 
 ### 1. Clone the Repository
 
-First, clone the project repository to your local machine.
+First, clone the project repository to your local machine:
 
 ```bash
 git clone https://github.com/your-repo/chinook-backend.git
 cd chinook-backend
 ```
 
-### 2. Environment Variables
+### 2. Set Up Environment Variables
 
 Create a `.env` file at the root of the project with the following environment variables:
 
@@ -58,7 +58,9 @@ USE chinook_db;
 
 You can run the application locally using Docker. The `docker-compose.yml` file is already configured to set up a MySQL database and a Node.js server.
 
-To start the application, simply run:
+> **Note:** All Docker commands should be run from a root terminal.
+
+To start the application, run the following:
 
 ```bash
 docker-compose up --build
@@ -86,6 +88,14 @@ docker-compose down
 
 This will stop and remove the containers while keeping the data in the named volumes.
 
+If you need to reset the database and reinitialize it from the `init.sql` file, use:
+
+```bash
+docker-compose down -v
+```
+
+This will remove the containers and volumes, allowing you to start fresh.
+
 ## Running Locally without Docker
 
 If you'd like to run the application locally without Docker, follow these steps:
@@ -108,7 +118,7 @@ If you'd like to run the application locally without Docker, follow these steps:
    npm run start
    ```
 
-Make sure MySQL is installed and running on your local machine, and that the database configuration in your `.env` file matches your local setup.
+Ensure that MySQL is installed and running on your local machine, and that the database configuration in your `.env` file matches your local setup.
 
 ## Development Mode
 
