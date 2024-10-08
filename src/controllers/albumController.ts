@@ -33,14 +33,22 @@ export const getAlbumById = async (req: Request, res: Response) => {
 // Get all albums by a specific artist ID
 export const getAlbumsByArtistId = async (req: Request, res: Response) => {
   const artistId = parseInt(req.params.artistId, 10);
+
+  // Validate the artistId
+  if (isNaN(artistId) || artistId <= 0) {
+    return res.status(400).json({ message: 'Invalid artist ID provided' });
+  }
+
   try {
     const albums = await albumService.getAlbumsByArtistId(artistId);
+    
     if (albums.length > 0) {
       res.status(200).json(albums);
     } else {
       res.status(404).json({ message: 'No albums found for this artist' });
     }
   } catch (error) {
+    console.error('Error fetching albums by artist:', error);
     res.status(500).json({ message: 'Error fetching albums by artist', error });
   }
 };

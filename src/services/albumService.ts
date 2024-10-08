@@ -62,9 +62,12 @@ export const getAlbumById = async (id: number): Promise<Album | null> => {
     throw error;
   }
 };
-
 // Get all albums by a specific artist ID
 export const getAlbumsByArtistId = async (artistId: number): Promise<Album[]> => {
+  if (!artistId || isNaN(artistId)) {
+    throw new Error('Invalid ArtistId');
+  }
+
   try {
     const [albumRows] = await pool.query<Album[] & RowDataPacket[]>(
       'SELECT * FROM Album WHERE ArtistId = ?',
