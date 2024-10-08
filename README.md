@@ -28,18 +28,21 @@ cd chinook-backend
 Create a `.env` file at the root of the project with the following environment variables:
 
 ```bash
-# MySQL settings
-DB_ROOT_PASSWORD=your-root-password
-DB_NAME=chinook_db
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-DB_PORT=3306
+# .env
 
-# Application settings
-APP_PORT=3000
+# MySQL Configuration
+DB_ROOT_PASSWORD=myRootPassword     # Set a secure root password for MySQL
+DB_USER=myuser                      # Non-root user for MySQL
+DB_PASSWORD=myUserPassword          # Password for the non-root user
+DB_NAME=chinook                     # Name of the database to be created
+DB_HOST=db                          # Hostname for MySQL container, should match the service name in docker-compose
+DB_PORT=3306                        # MySQL default port
+
+# Application Configuration
+APP_PORT=3000                       # Port your Node.js app will run on
 
 # Security
-ACCESS_TOKEN_SECRET=yourSecretKey
+ACCESS_TOKEN_SECRET=mySecretKey     # Secret key for signing JWT tokens (change to a strong, random value)
 ```
 
 These environment variables will be used by both Docker and your Node.js application.
