@@ -1,5 +1,3 @@
-// src/controllers/albumController.ts
-
 import { Request, Response } from 'express';
 import * as albumService from '../services/albumService';
 import { Album, NewAlbum } from '../models/album';
@@ -32,9 +30,24 @@ export const getAlbumById = async (req: Request, res: Response) => {
   }
 };
 
+// Get all albums by a specific artist ID
+export const getAlbumsByArtistId = async (req: Request, res: Response) => {
+  const artistId = parseInt(req.params.artistId, 10);
+  try {
+    const albums = await albumService.getAlbumsByArtistId(artistId);
+    if (albums.length > 0) {
+      res.status(200).json(albums);
+    } else {
+      res.status(404).json({ message: 'No albums found for this artist' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching albums by artist', error });
+  }
+};
+
 // Create a new album (NewAlbum type doesn't require AlbumId)
 export const createAlbum = async (req: Request, res: Response) => {
-  const newAlbum: NewAlbum = req.body;  // Use NewAlbum here
+  const newAlbum: NewAlbum = req.body;
   try {
     const createdAlbum = await albumService.createAlbum(newAlbum);
     res.status(201).json(createdAlbum);
@@ -58,7 +71,6 @@ export const updateAlbum = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error updating album', error });
   }
 };
-
 
 // Delete an album
 export const deleteAlbum = async (req: Request, res: Response) => {

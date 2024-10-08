@@ -63,16 +63,27 @@ export const getTracksByGenreId = async (
   }
 };
 
-// Create a new genre
+// Create a new genre with validation
 export const createGenre = async (newGenre: Omit<Genre, 'GenreId'>): Promise<Genre> => {
   const { Name } = newGenre;
-  const [result] = await pool.query<ResultSetHeader>(
-    'INSERT INTO Genre (Name) VALUES (?)',
-    [Name]
-  );
-  const insertedId = result.insertId;
-  return { GenreId: insertedId, Name };
+
+  if (!Name || Name.trim() === '') {
+    throw new Error('Genre name is required');
+  }
+  
+  try {
+    const [result] = await pool.query<ResultSetHeader>(
+      'INSERT INTO Genre (Name) VALUES (?)',
+      [Name]
+    );
+    const insertedId = result.insertId;
+    return { GenreId: insertedId, Name };
+  } catch (error) {
+    console.error('Error creating genre:', error);
+    throw new Error('Error creating genre');
+  }
 };
+
 
 // Update an existing genre
 export const updateGenre = async (id: number, updatedGenre: Partial<Genre>): Promise<Genre | null> => {

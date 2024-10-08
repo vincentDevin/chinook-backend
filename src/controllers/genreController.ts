@@ -47,15 +47,20 @@ export const getTracksByGenreId = async (req: Request, res: Response) => {
   }
 };
 
-
-
 // Create a new genre
 export const createGenre = async (req: Request, res: Response) => {
   const newGenre: Omit<Genre, 'GenreId'> = req.body;
+
+  // Validation: Check if 'Name' is provided and not an empty string
+  if (!newGenre.Name || newGenre.Name.trim() === '') {
+    return res.status(400).json({ message: 'Genre name is required' });
+  }
+
   try {
     const createdGenre = await genreService.createGenre(newGenre);
     res.status(201).json(createdGenre);
   } catch (error) {
+    console.error('Error creating genre:', error);
     res.status(500).json({ message: 'Error creating genre', error });
   }
 };

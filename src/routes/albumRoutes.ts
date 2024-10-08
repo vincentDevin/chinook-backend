@@ -10,28 +10,17 @@ const router = Router();
  * @desc    Get all albums with pagination and related artist data
  * @access  Public
  * @returns {Array} - List of albums with related artist information
- * 
- * @example
- * Response:
- * {
- *   "albums": [
- *     {
- *       "AlbumId": 1,
- *       "Title": "Album 1",
- *       "ArtistId": 1,
- *       "ArtistName": "Artist 1"
- *     },
- *     {
- *       "AlbumId": 2,
- *       "Title": "Album 2",
- *       "ArtistId": 2,
- *       "ArtistName": "Artist 2"
- *     }
- *   ],
- *   "totalCount": 100
- * }
  */
 router.get('/', albumController.getAllAlbums);
+
+/**
+ * @route   GET /api/albums/byArtist/:artistId
+ * @desc    Get all albums by a specific artist ID
+ * @access  Public
+ * @param   {Number} artistId - Artist ID
+ * @returns {Array} - List of albums for the specified artist
+ */
+router.get('/byArtist/:artistId', albumController.getAlbumsByArtistId);
 
 /**
  * @route   GET /api/albums/:id
@@ -39,19 +28,6 @@ router.get('/', albumController.getAllAlbums);
  * @access  Public
  * @param   {Number} id - Album ID
  * @returns {Object} - The album object with related tracks and artist data
- * 
- * @example
- * Request URL: /api/albums/1
- * Response:
- * {
- *   "AlbumId": 1,
- *   "Title": "Album Title",
- *   "ArtistName": "Artist Name",
- *   "Tracks": [
- *     { "TrackId": 1, "Name": "Track 1" },
- *     { "TrackId": 2, "Name": "Track 2" }
- *   ]
- * }
  */
 router.get('/:id', albumController.getAlbumById);
 
@@ -61,14 +37,6 @@ router.get('/:id', albumController.getAlbumById);
  * @access  Public
  * @param   {Number} albumId - Album ID
  * @returns {Array} - List of tracks for the specified album
- * 
- * @example
- * Request URL: /api/albums/1/tracks
- * Response:
- * [
- *   { "TrackId": 1, "Name": "Track 1", "AlbumId": 1 },
- *   { "TrackId": 2, "Name": "Track 2", "AlbumId": 1 }
- * ]
  */
 router.get('/:albumId/tracks', trackController.getTracksByAlbumId);
 
@@ -78,19 +46,6 @@ router.get('/:albumId/tracks', trackController.getTracksByAlbumId);
  * @access  Admin (roleId >= 3)
  * @param   {Object} Album - The new album data
  * @returns {Object} - The created album object
- * 
- * @example
- * Request Body:
- * {
- *   "Title": "New Album",
- *   "ArtistId": 1
- * }
- * Response:
- * {
- *   "AlbumId": 10,
- *   "Title": "New Album",
- *   "ArtistId": 1
- * }
  */
 router.post('/', authenticateToken, authorizeRole(3), albumController.createAlbum);
 
@@ -101,19 +56,6 @@ router.post('/', authenticateToken, authorizeRole(3), albumController.createAlbu
  * @param   {Number} id - Album ID
  * @param   {Object} Album - The updated album data
  * @returns {Object} - The updated album object
- * 
- * @example
- * Request URL: /api/albums/1
- * Request Body:
- * {
- *   "Title": "Updated Album Title"
- * }
- * Response:
- * {
- *   "AlbumId": 1,
- *   "Title": "Updated Album Title",
- *   "ArtistId": 1
- * }
  */
 router.put('/:id', authenticateToken, authorizeRole(3), albumController.updateAlbum);
 
@@ -123,13 +65,6 @@ router.put('/:id', authenticateToken, authorizeRole(3), albumController.updateAl
  * @access  Admin (roleId >= 3)
  * @param   {Number} id - Album ID
  * @returns {Object} - A message confirming the deletion
- * 
- * @example
- * Request URL: /api/albums/1
- * Response:
- * {
- *   "message": "Album deleted successfully"
- * }
  */
 router.delete('/:id', authenticateToken, authorizeRole(3), albumController.deleteAlbum);
 

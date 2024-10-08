@@ -63,6 +63,20 @@ export const getAlbumById = async (id: number): Promise<Album | null> => {
   }
 };
 
+// Get all albums by a specific artist ID
+export const getAlbumsByArtistId = async (artistId: number): Promise<Album[]> => {
+  try {
+    const [albumRows] = await pool.query<Album[] & RowDataPacket[]>(
+      'SELECT * FROM Album WHERE ArtistId = ?',
+      [artistId]
+    );
+    return albumRows;
+  } catch (error) {
+    console.error('Error fetching albums by artist:', error);
+    throw error;
+  }
+};
+
 // Create a new album
 export const createAlbum = async (newAlbum: Omit<Album, 'AlbumId'>): Promise<Album> => {
   try {
