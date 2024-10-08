@@ -19,7 +19,7 @@ Before setting up the project, make sure you have the following installed:
 First, clone the project repository to your local machine:
 
 ```bash
-git clone https://github.com/your-repo/chinook-backend.git
+git clone https://github.com/vincentDevin/chinook-backend.git
 cd chinook-backend
 ```
 
