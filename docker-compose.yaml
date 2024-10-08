@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Define the MySQL service
+  db:
+    image: mysql:8.0
+    container_name: chinook_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}  # Root password (use a separate env variable)
+      MYSQL_DATABASE: ${DB_NAME}                # Database name
+      MYSQL_USER: ${DB_USER}                    # Non-root user (different from root)
+      MYSQL_PASSWORD: ${DB_PASSWORD}            # Password for non-root user
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Mount init.sql for DB initialization
+    networks:
+      - app-network
+
+  # Define the Node.js service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chinook_backend
+    restart: always
+    environment:
+      DB_HOST: db                              # Reference the db service
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}                      # Non-root user credentials
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      PORT: ${APP_PORT}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - app-network
+    volumes:
+      - .:/usr/src/app                         # Mount source code
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Optional: Mount for app reference
+
+# Define the named volumes
+volumes:
+  mysql_data:
+
+# Define the custom network
+networks:
+  app-network:
+    driver: bridge

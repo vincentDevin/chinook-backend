@@ -10,7 +10,7 @@ dist
 .env
 
 # Ignore Docker-specific files
-docker-compose.yaml
+#docker-compose.yaml
 
 # Ignore local configuration files
 *.log

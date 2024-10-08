@@ -8,7 +8,7 @@ node_modules/
 dist/
 
 # Ignore Docker-specific files
-docker-compose.yaml
+#docker-compose.yaml
 
 # Ignore npm logs
 npm-debug.log*
