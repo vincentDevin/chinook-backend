@@ -37,6 +37,9 @@ DB_PORT=3306
 
 # Application settings
 APP_PORT=3000
+
+# Security
+ACCESS_TOKEN_SECRET=yourSecretKey
 ```
 
 These environment variables will be used by both Docker and your Node.js application.
