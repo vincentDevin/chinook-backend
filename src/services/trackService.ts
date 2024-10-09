@@ -195,9 +195,9 @@ export const createTrack = async (newTrack: Omit<Track, 'TrackId'>): Promise<Tra
   return createdTrack!;
 };
 
-// Update an existing track
+// Update an existing track (including changing the album, which effectively changes the artist)
 export const updateTrack = async (id: number, updatedTrack: Partial<Track>): Promise<TrackWithDetails | null> => {
-  // Fetch the current track details to get the existing values
+  // Fetch the current track details
   const currentTrack = await getTrackById(id);
   
   if (!currentTrack) {
@@ -211,11 +211,15 @@ export const updateTrack = async (id: number, updatedTrack: Partial<Track>): Pro
     Milliseconds: updatedTrack.Milliseconds ?? currentTrack.Milliseconds,
     Bytes: updatedTrack.Bytes ?? currentTrack.Bytes,
     UnitPrice: updatedTrack.UnitPrice ?? currentTrack.UnitPrice,
+    AlbumId: updatedTrack.AlbumId !== undefined ? updatedTrack.AlbumId : currentTrack.AlbumId, // This indirectly changes the artist
+    MediaTypeId: updatedTrack.MediaTypeId !== undefined ? updatedTrack.MediaTypeId : currentTrack.MediaTypeId,
+    GenreId: updatedTrack.GenreId !== undefined ? updatedTrack.GenreId : currentTrack.GenreId,
   };
 
   // Perform the update with the merged values
   const [result] = await pool.query<ResultSetHeader>(
-    `UPDATE Track SET Name = ?, Composer = ?, Milliseconds = ?, Bytes = ?, UnitPrice = ?
+    `UPDATE Track 
+     SET Name = ?, Composer = ?, Milliseconds = ?, Bytes = ?, UnitPrice = ?, AlbumId = ?, MediaTypeId = ?, GenreId = ?
      WHERE TrackId = ?`,
     [
       mergedTrack.Name,
@@ -223,14 +227,17 @@ export const updateTrack = async (id: number, updatedTrack: Partial<Track>): Pro
       mergedTrack.Milliseconds,
       mergedTrack.Bytes,
       mergedTrack.UnitPrice,
+      mergedTrack.AlbumId,
+      mergedTrack.MediaTypeId,
+      mergedTrack.GenreId,
       id
     ]
   );
 
   if (result.affectedRows > 0) {
-    // Fetch the updated track with its related details
-    const updated = await getTrackById(id);
-    return updated;
+    // Fetch the updated track after the update
+    const updatedTrack = await getTrackById(id);
+    return updatedTrack;
   }
 
   return null;
