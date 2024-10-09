@@ -139,9 +139,61 @@ export const updateArtist = async (id: number, updatedArtist: Partial<ArtistWith
   return null;
 };
 
-
-// Delete an artist
+// Delete an artist and update related albums and tracks to reference "Unknown Artist"
 export const deleteArtist = async (id: number): Promise<boolean> => {
-  const [result] = await pool.query<ResultSetHeader>('DELETE FROM Artist WHERE ArtistId = ?', [id]);
-  return result.affectedRows > 0;
+  const connection = await pool.getConnection(); // Start a transaction
+  try {
+    // Start the transaction
+    await connection.beginTransaction();
+
+    // Ensure there is an artist named "Unknown Artist" and get its ArtistId
+    const [unknownArtistResult] = await connection.query<RowDataPacket[]>(
+      'SELECT ArtistId FROM Artist WHERE Name = "Unknown Artist" LIMIT 1'
+    );
+    
+    let unknownArtistId;
+
+    // If "Unknown Artist" doesn't exist, create it and get the new ArtistId
+    if (unknownArtistResult.length === 0) {
+      const [insertResult] = await connection.query<ResultSetHeader>(
+        'INSERT INTO Artist (Name) VALUES ("Unknown Artist")'
+      );
+      unknownArtistId = insertResult.insertId;
+    } else {
+      unknownArtistId = unknownArtistResult[0].ArtistId;
+    }
+
+    // Set ArtistId to "Unknown Artist" for all albums related to the artist being deleted
+    await connection.query<ResultSetHeader>(
+      'UPDATE Album SET ArtistId = ? WHERE ArtistId = ?',
+      [unknownArtistId, id]
+    );
+
+    // Set ArtistId to "Unknown Artist" for all tracks related to the artist being deleted
+    await connection.query<ResultSetHeader>(
+      `UPDATE Track t
+       JOIN Album a ON t.AlbumId = a.AlbumId
+       SET a.ArtistId = ?, t.AlbumId = NULL
+       WHERE a.ArtistId = ?`,
+      [unknownArtistId, id]
+    );
+
+    // Now delete the artist after the related albums and tracks are updated
+    const [result] = await connection.query<ResultSetHeader>(
+      'DELETE FROM Artist WHERE ArtistId = ?',
+      [id]
+    );
+
+    // Commit the transaction
+    await connection.commit();
+
+    return result.affectedRows > 0;
+  } catch (error) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
+    console.error('Error deleting artist:', error);
+    throw error;
+  } finally {
+    connection.release(); // Release the connection
+  }
 };

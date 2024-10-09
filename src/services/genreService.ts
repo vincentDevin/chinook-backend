@@ -97,8 +97,36 @@ export const updateGenre = async (id: number, updatedGenre: Partial<Genre>): Pro
   return null;
 };
 
-// Delete a genre
+// Delete a genre and update related tracks to have a NULL GenreId
 export const deleteGenre = async (id: number): Promise<boolean> => {
-  const [result] = await pool.query<ResultSetHeader>('DELETE FROM Genre WHERE GenreId = ?', [id]);
-  return result.affectedRows > 0;
+  const connection = await pool.getConnection(); // Start a transaction
+  try {
+    // Start the transaction
+    await connection.beginTransaction();
+
+    // Set GenreId to NULL for all tracks related to the genre being deleted
+    await connection.query<ResultSetHeader>(
+      'UPDATE Track SET GenreId = NULL WHERE GenreId = ?',
+      [id]
+    );
+
+    // Now delete the genre after the related tracks are updated
+    const [result] = await connection.query<ResultSetHeader>(
+      'DELETE FROM Genre WHERE GenreId = ?',
+      [id]
+    );
+
+    // Commit the transaction
+    await connection.commit();
+
+    return result.affectedRows > 0;
+  } catch (error) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
+    console.error('Error deleting genre:', error);
+    throw error;
+  } finally {
+    connection.release(); // Release the connection
+  }
 };
+

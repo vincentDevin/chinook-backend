@@ -117,16 +117,36 @@ export const updateAlbum = async (id: number, updatedAlbum: Partial<Album>): Pro
   }
 };
 
-// Delete an album
+// Delete an album and update related tracks with NULL albumId
 export const deleteAlbum = async (id: number): Promise<boolean> => {
+  const connection = await pool.getConnection(); // Start a transaction
   try {
-    const [result] = await pool.query<ResultSetHeader>(
+    // Start the transaction
+    await connection.beginTransaction();
+
+    // Set AlbumId to NULL in the Track table for all tracks related to this album
+    await connection.query<ResultSetHeader>(
+      'UPDATE Track SET AlbumId = NULL WHERE AlbumId = ?',
+      [id]
+    );
+
+    // Now delete the album after the related tracks are updated
+    const [result] = await connection.query<ResultSetHeader>(
       'DELETE FROM Album WHERE AlbumId = ?',
       [id]
     );
+
+    // Commit the transaction
+    await connection.commit();
+
     return result.affectedRows > 0;
   } catch (error) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
     console.error('Error deleting album:', error);
     throw error;
+  } finally {
+    connection.release(); // Release the connection
   }
 };
+

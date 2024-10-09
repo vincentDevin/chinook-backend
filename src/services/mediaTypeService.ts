@@ -82,17 +82,55 @@ export const updateMediaType = async (id: number, updatedMediaType: Partial<Medi
 };
 
 
-// Delete a media type
+// Delete a media type and update related tracks to have 'Unknown Media Type'
 export const deleteMediaType = async (id: number): Promise<boolean> => {
+  const connection = await pool.getConnection(); // Start a transaction
   try {
-    const [result] = await pool.query<ResultSetHeader>(
+    // Start the transaction
+    await connection.beginTransaction();
+
+    // Fetch the ID of the 'Unknown Media Type' entry
+    const [unknownMediaTypeResult] = await connection.query<RowDataPacket[]>(
+      'SELECT MediaTypeId FROM MediaType WHERE Name = ? LIMIT 1',
+      ['Unknown Media Type']
+    );
+
+    let unknownMediaTypeId: number;
+
+    if (unknownMediaTypeResult.length > 0) {
+      unknownMediaTypeId = unknownMediaTypeResult[0].MediaTypeId;
+    } else {
+      // Insert 'Unknown Media Type' if it doesn't exist and get the ID
+      const [insertResult] = await connection.query<ResultSetHeader>(
+        'INSERT INTO MediaType (Name) VALUES (?)',
+        ['Unknown Media Type']
+      );
+      unknownMediaTypeId = insertResult.insertId;
+    }
+
+    // Update all tracks that are using the media type to be deleted to 'Unknown Media Type'
+    await connection.query<ResultSetHeader>(
+      'UPDATE Track SET MediaTypeId = ? WHERE MediaTypeId = ?',
+      [unknownMediaTypeId, id]
+    );
+
+    // Now delete the media type after the related tracks are updated
+    const [result] = await connection.query<ResultSetHeader>(
       'DELETE FROM MediaType WHERE MediaTypeId = ?',
       [id]
     );
 
+    // Commit the transaction
+    await connection.commit();
+
     return result.affectedRows > 0;
   } catch (error) {
+    // Rollback the transaction in case of an error
+    await connection.rollback();
     console.error('Error deleting media type:', error);
     throw error;
+  } finally {
+    connection.release(); // Release the connection
   }
 };
+
